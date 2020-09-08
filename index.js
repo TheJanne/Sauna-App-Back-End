@@ -6,23 +6,24 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 
+const Helpers = require("./helpers");
+
 // SQL Connection
 const mySQL = require('mysql');
 var connection;
 
-
+// Configurations for application.
 app.use((req, res, next) => {
 
     // Enable CORS
     res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Request-With, Content-Type, Accept, Authorization');
-  
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Request-With, Content-Type, Accept, Authorization');  
     if (req.method === 'OPTIONS'){
   
       res.header('Access-Control-Allow-Methods', 'PUT, POST, PATCH, DELETE, GET');
     }
 
-    // Connection configurations.
+    // SQL database connection configurations.
     connection = mySQL.createConnection({
 
         host: "localhost",
@@ -34,43 +35,51 @@ app.use((req, res, next) => {
     next();
 });
 
-app.post("/test", (req, res) => {    
-    
-    res.sendStatus(200);
-});
-
+// Inserts a new reservation into the database.
+// Returns status code.
 app.post("/bookNewReservation", (req, res) => {
 
-    const reservation = [req.body.FN, req.body.LN, req.body.DATE, req.body.TIME];   
+    const reservation = [req.body.FN, req.body.LN, req.body.DATE, req.body.TIME];
+    const reservationObject = Helpers.objectValuesIntoSQLValues(reservation);
     
     connection.connect((err) => {
-        
-        connection.query('INSERT INTO reservations (firstname, lastname, date, time) VALUES(' + objectValuesIntoSQLValues(reservation) + ')', (err, results, fields) => {
+
+        // Error check if connection error happens.
+        if(err){
+
+            // Log the error to servers console and response with internal error.
+            console.log(err);
+            connection.end();
+            res.sendStatus(500);
+        }
+
+        connection.query('INSERT INTO reservations (firstname, lastname, date, time) VALUES(' + reservationObject + ')', (err, results, fields) => {
 
             if(err){
-                console.log(time() + " " + err);                
+                console.log(err);                
                 res.sendStatus(500);
             }
 
             else{
-                console.log(time() + " " + results);
                 res.sendStatus(200);
             }
-        });
-    })
 
-    connection.end();
+            connection.end();
+        });
+    });    
 });
 
+// Gets all reservations from database by a week number.
+// Returns JSON object with the reservations.
 app.post("/getReservations", (req, res) => {
 
     connection.connect((err) => {
         
-        // Check if any errors occured.
+        // Error check if connection error happens.
         if(err){
 
             // Log the error to servers console and response with internal error.
-            console.log(time() + " " + err);
+            console.log(err);
             connection.end();
             res.sendStatus(500);
         }
@@ -85,7 +94,7 @@ app.post("/getReservations", (req, res) => {
                 if(err){ 
 
                     connection.end();
-                    console.log(time() + " " +err);     
+                    console.log(err);     
                     res.json(results);
                 }
 
@@ -105,30 +114,16 @@ app.post("/getReservations", (req, res) => {
     });
 });
 
-
-
-const objectValuesIntoSQLValues = (object) => {    
+// Uncomment to test if the server is working.
+/*
+app.post("/test", (req, res) => {    
     
-    let sqlString = "";
+    res.sendStatus(200);
+});
+*/
 
-    object.forEach(value => {
-
-        sqlString += "'" + value + "'";
-
-        if(object.indexOf(value) !== object.length - 1){
-            sqlString += ", ";
-        }
-    });
-
-    return sqlString;
-}
-
-const time = () => {
-
-    const currentTime = new Date();
-    return "[" + currentTime.getHours() + ":" + currentTime.getMinutes() + "]: ";
-}
-
-// Leave these to bottom!!!
+// Inform the developers that the server is up and running. Display the port too.
 app.listen(port = 5000, () => {console.log('Server started on port ' + port)});
+
+// If no valid address were given, return not found error code.
 app.post('*', (req, res) => {res.sendStatus(404)});
