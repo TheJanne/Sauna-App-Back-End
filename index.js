@@ -1,12 +1,13 @@
 const express = require("express");
 const app = express();
+
+// Tools to parse requests.
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 
 // SQL Connection
 const mySQL = require('mysql');
-const { json } = require("express");
 var connection;
 
 
@@ -18,7 +19,7 @@ app.use((req, res, next) => {
   
     if (req.method === 'OPTIONS'){
   
-      res.header('Access-Control-Allow-Methods', 'POST');
+      res.header('Access-Control-Allow-Methods', 'PUT, POST, PATCH, DELETE, GET');
     }
 
     // Connection configurations.
@@ -76,9 +77,9 @@ app.post("/getReservations", (req, res) => {
         
         else{
 
-            const date = req.body.DATE;
+            const week = req.body.WEEK;
     
-            const queryString = "SELECT date, time FROM reservations WHERE WEEK(date) = WEEK('" + date + "')";
+            const queryString = "SELECT date, time FROM reservations WHERE WEEK(date) = '" + week + "'";
             connection.query(queryString, (err, results, fields) => {
                 
                 if(err){ 
@@ -87,6 +88,7 @@ app.post("/getReservations", (req, res) => {
                     console.log(time() + " " +err);     
                     res.json(results);
                 }
+
                 else{
 
                     results.forEach(data => {       
@@ -102,6 +104,8 @@ app.post("/getReservations", (req, res) => {
         }
     });
 });
+
+
 
 const objectValuesIntoSQLValues = (object) => {    
     
@@ -122,9 +126,9 @@ const objectValuesIntoSQLValues = (object) => {
 const time = () => {
 
     const currentTime = new Date();
-    return " [ " + currentTime.getHours() + ":" + currentTime.getMinutes() + " ]: ";
+    return "[" + currentTime.getHours() + ":" + currentTime.getMinutes() + "]: ";
 }
 
-// Leave these to bottom!!!.
+// Leave these to bottom!!!
 app.listen(port = 5000, () => {console.log('Server started on port ' + port)});
 app.post('*', (req, res) => {res.sendStatus(404)});
