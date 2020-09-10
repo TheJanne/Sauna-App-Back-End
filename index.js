@@ -85,10 +85,8 @@ app.post("/getReservations", (req, res) => {
         }
         
         else{
-
-            const week = req.body.WEEK;
     
-            const queryString = "SELECT date, time FROM reservations WHERE WEEK(date) = '" + week + "'";
+            const queryString = "SELECT date, time FROM reservations WHERE WEEK(date, 1) = " + req.body.WEEK;
             connection.query(queryString, (err, results, fields) => {
                 
                 if(err){ 
@@ -100,11 +98,12 @@ app.post("/getReservations", (req, res) => {
 
                 else{
 
-                    results.forEach(data => {       
+                    results.forEach(data => {
 
-                        // Remove the time after the date and replace it as new data.
+                        // Clean the data for better usability.
                         data["date"] = data["date"].toISOString().split("T")[0];
-                    })
+                        data["time"] = data["time"].substring(0, 5);
+                    });
 
                     connection.end();
                     res.json(results);
