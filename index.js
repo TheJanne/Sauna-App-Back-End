@@ -42,6 +42,8 @@ app.post("/bookNewReservation", (req, res) => {
     const reservation = [req.body.FN, req.body.LN, req.body.DATE, req.body.TIME];
     const reservationObject = Helpers.objectValuesIntoSQLValues(reservation);
     
+    console.log(reservation);
+
     connection.connect((err) => {
 
         // Error check if connection error happens.
@@ -88,7 +90,7 @@ app.post("/getReservations", (req, res) => {
     
             const queryString = "SELECT date, time FROM reservations WHERE WEEK(date, 1) = " + req.body.WEEK;
             connection.query(queryString, (err, results, fields) => {
-                
+
                 if(err){ 
 
                     connection.end();
@@ -101,8 +103,8 @@ app.post("/getReservations", (req, res) => {
                     results.forEach(data => {
 
                         // Clean the data for better usability.
-                        data["date"] = data["date"].toISOString().split("T")[0];
-                        data["time"] = data["time"].substring(0, 5);
+                        data.date = data.date.getUTCFullYear() + "-" + (data.date.getMonth() + 1) + "-" + data.date.getDate();
+                        data.time = data.time.substring(0, 5);
                     });
 
                     connection.end();
@@ -113,13 +115,12 @@ app.post("/getReservations", (req, res) => {
     });
 });
 
-// Uncomment to test if the server is working.
+// Uncomment to test if the server is working. 
 /*
 app.post("/test", (req, res) => {    
     
-    res.sendStatus(200);
-});
-*/
+    res.send(200);
+});*/
 
 // Inform the developers that the server is up and running. Display the port too.
 app.listen(port = 5000, () => {console.log('Server started on port ' + port)});
