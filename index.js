@@ -37,13 +37,23 @@ app.use((req, res, next) => {
 
 // Inserts a new reservation into the database.
 // Returns status code.
-app.post("/bookNewReservation", (req, res) => {
+app.post("/bookNewReservation", (req, res) => {    
 
     const reservation = [req.body.FN, req.body.LN, req.body.DATE, req.body.TIME];
+
+    console.log("asd");
+
+    // Check if data is valid. If not, send status 406 (Not Acceptable)
+    reservation.forEach(data => {
+
+        if(data == ""){
+
+            res.sendStatus(406);
+        }
+    })
+
     const reservationObject = Helpers.objectValuesIntoSQLValues(reservation);
     
-    console.log(reservation);
-
     connection.connect((err) => {
 
         // Error check if connection error happens.
@@ -51,7 +61,6 @@ app.post("/bookNewReservation", (req, res) => {
 
             // Log the error to servers console and response with internal error.
             console.log(err);
-            connection.end();
             res.sendStatus(500);
         }
 
@@ -65,8 +74,6 @@ app.post("/bookNewReservation", (req, res) => {
             else{
                 res.sendStatus(200);
             }
-
-            connection.end();
         });
     });    
 });
@@ -82,7 +89,6 @@ app.post("/getReservations", (req, res) => {
 
             // Log the error to servers console and response with internal error.
             console.log(err);
-            connection.end();
             res.sendStatus(500);
         }
         
@@ -90,7 +96,7 @@ app.post("/getReservations", (req, res) => {
     
             const queryString = "SELECT date, time FROM reservations WHERE WEEK(date, 1) = " + req.body.WEEK;
             connection.query(queryString, (err, results, fields) => {
-
+                
                 if(err){ 
 
                     connection.end();
@@ -106,8 +112,6 @@ app.post("/getReservations", (req, res) => {
                         data.date = data.date.getUTCFullYear() + "-" + (data.date.getMonth() + 1) + "-" + data.date.getDate();
                         data.time = data.time.substring(0, 5);
                     });
-
-                    connection.end();
                     res.json(results);
                 }
             });
