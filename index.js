@@ -40,9 +40,7 @@ app.use((req, res, next) => {
 app.post("/bookNewReservation", (req, res) => {    
 
     const reservation = [req.body.FN, req.body.LN, req.body.DATE, req.body.TIME];
-
-    console.log("asd");
-
+    
     // Check if data is valid. If not, send status 406 (Not Acceptable)
     reservation.forEach(data => {
 
@@ -51,9 +49,9 @@ app.post("/bookNewReservation", (req, res) => {
             res.sendStatus(406);
         }
     })
-
-    const reservationObject = Helpers.objectValuesIntoSQLValues(reservation);
     
+    const reservationObject = Helpers.objectValuesIntoSQLValues(reservation);
+
     connection.connect((err) => {
 
         // Error check if connection error happens.
@@ -64,17 +62,29 @@ app.post("/bookNewReservation", (req, res) => {
             res.sendStatus(500);
         }
 
-        connection.query('INSERT INTO reservations (firstname, lastname, date, time) VALUES(' + reservationObject + ')', (err, results, fields) => {
+        connection.query("SELECT date, time FROM reservations WHERE date='" + reservationObject.date + "' AND time='" + reservationObject.time + "'", 
+        (err, results, fields) => {
 
-            if(err){
-                console.log(err);                
-                res.sendStatus(500);
+            // Doesnt work yet, need to check the format of the dates before results could be found.
+            if(results.count > 0){
+                
+                // Results were found, send status code 302 (Found)
+                res.sendStatus(302);
             }
-
             else{
-                res.sendStatus(200);
+                connection.query('INSERT INTO reservations (firstname, lastname, date, time) VALUES(' + reservationObject + ')', (err, results, fields) => {
+
+                    if(err){
+                        console.log(err);                
+                        res.sendStatus(500);
+                    }
+        
+                    else{
+                        res.sendStatus(200);
+                    }
+                });
             }
-        });
+        });        
     });    
 });
 
@@ -96,10 +106,9 @@ app.post("/getReservations", (req, res) => {
     
             const queryString = "SELECT date, time FROM reservations WHERE WEEK(date, 1) = " + req.body.WEEK;
             connection.query(queryString, (err, results, fields) => {
-                
+                                
                 if(err){ 
 
-                    connection.end();
                     console.log(err);     
                     res.json(results);
                 }
